@@ -74,7 +74,6 @@ getData().then(function () {
 })
 
 function addCrowns() {
-    console.log(totalCrowns);
     totalCrowns += 10;
     chrome.storage.sync.set({
         totalCrowns: totalCrowns

@@ -59,5 +59,9 @@ function stopCounter() {
 }
 
 window.onload = function () {
-    countDown();
+    chrome.storage.sync.get(['timeToWait', 'totalCrowns'], function (items) {
+        timeToWait = items.timeToWait;
+        totalCrowns = items.totalCrowns;
+        countDown();
+    });
 }
