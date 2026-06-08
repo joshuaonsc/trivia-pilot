@@ -1,16 +1,18 @@
 {
-  "manifest_version": 2,
-  "name": "Daily Crown Quiz Answering Extension",
-  "description": "Automatically answers all 120 daily quiz questions. Just login and complete the captchas at the end of each quiz.",
-  "version": "6.0.1",
+  "manifest_version": 3,
+  "name": "TriviaPilot",
+  "description": "Automatically answers the daily Wizard101 and Pirate101 trivia quizzes. Log in, start it, and complete the captchas at the end of each quiz.",
+  "version": "1.0.0",
+  "author": "joshuaonsc",
+  "homepage_url": "https://github.com/joshuaonsc/trivia-pilot",
   "options_page": "options/options.html",
   "icons": {
     "128": "icons/icon_128.png"
   },
   "background": {
-    "page": "background.html"
+    "service_worker": "background.js"
   },
-  "browser_action": {
+  "action": {
     "default_icon": "icons/icon_19.png"
   },
   "permissions": [
@@ -53,10 +55,17 @@
     }
   ],
   "web_accessible_resources": [
-    "sounds/beep.wav",
-    "sounds/magic.wav",
-    "sounds/sonar.wav",
-    "sounds/squeaky.wav",
-    "sounds/windows.wav"
+    {
+      "resources": [
+        "sounds/beep.wav",
+        "sounds/magic.wav",
+        "sounds/sonar.wav",
+        "sounds/squeaky.wav",
+        "sounds/windows.wav"
+      ],
+      "matches": [
+        "https://www.wizard101.com/*"
+      ]
+    }
   ]
 }
