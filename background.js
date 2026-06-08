@@ -31,13 +31,17 @@ const DEFAULTS = {
   timeToWait: 30, timeToWait429: 60, totalCrowns: 0,
 };
 
-// First install seeds default options; updates keep automaticSelection on (as MV2 did).
-chrome.runtime.onInstalled.addListener((details) => {
-  if (details.reason === "install") {
-    chrome.storage.sync.set(DEFAULTS);
-  } else if (details.reason === "update") {
-    chrome.storage.sync.set({ automaticSelection: true });
+// Seed any missing default options. Runs on first install AND on reload/update,
+// so a dev reload after an empty install still gets a full set of defaults.
+// On update we also re-enable automaticSelection, matching the MV2 behavior.
+chrome.runtime.onInstalled.addListener(async (details) => {
+  const current = await chrome.storage.sync.get(Object.keys(DEFAULTS));
+  const missing = {};
+  for (const k in DEFAULTS) {
+    if (current[k] === undefined) missing[k] = DEFAULTS[k];
   }
+  if (Object.keys(missing).length) await chrome.storage.sync.set(missing);
+  if (details.reason === "update") await chrome.storage.sync.set({ automaticSelection: true });
 });
 
 // Toolbar icon -> open the trivia/login page in the Quiz tab.
