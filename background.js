@@ -1,11 +1,15 @@
 // TriviaPilot - MV3 background service worker
 //
-// Ported from the MV2 background page. The worker is event-driven and
-// effectively stateless: only the reused "Quiz" tab id and the current/pending
-// quiz are persisted, in chrome.storage.session (which survives worker
-// restarts). Wait-screen timing is page-driven -- the wait pages message the
-// worker when their countdown ends -- so there is no setInterval here and no
-// chrome.alarms.
+// Event-driven and effectively stateless: only the reused "Quiz" tab id, the
+// wait-screen tab id, and the current/pending quiz live in chrome.storage.session
+// (which survives worker restarts). The wait screens are purely cosmetic countdown
+// UIs -- when a wait tab CLOSES (its countdown finished, the user hit "skip", or
+// the user closed the tab), chrome.tabs.onRemoved fires and the worker advances.
+// So timing still lives in the page, but closing the page can no longer strand
+// the run.
+
+const DEBUG = true;
+const log = (...a) => { if (DEBUG) console.log("[TriviaPilot]", ...a); };
 
 const QUIZ_LIST = ["Adventuring", "Conjuring", "Magical", "Marleybone", "Mystical",
                    "Spellbinding", "Spells", "Valencia", "Wizard City", "Zafaria"];
@@ -42,10 +46,11 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   }
   if (Object.keys(missing).length) await chrome.storage.sync.set(missing);
   if (details.reason === "update") await chrome.storage.sync.set({ automaticSelection: true });
+  log("onInstalled:", details.reason, "| seeded:", Object.keys(missing));
 });
 
 // Toolbar icon -> open the trivia/login page in the Quiz tab.
-chrome.action.onClicked.addListener(() => openInQuizTab(LOGIN_URL));
+chrome.action.onClicked.addListener(() => { log("icon clicked -> login page"); openInQuizTab(LOGIN_URL); });
 
 // ---- session-state helpers (survive worker restarts) ----
 async function sget(key) {
@@ -61,23 +66,53 @@ async function openInQuizTab(url) {
   if (tabId !== undefined) {
     try {
       await chrome.tabs.update(tabId, { url, active: true });
+      log("reuse Quiz tab", tabId);
       return;
     } catch (e) {
-      // stored tab is gone; fall through and create a fresh one
+      log("Quiz tab gone; creating a new one");
     }
   }
   const tab = await chrome.tabs.create({ url });
   await sset({ quizTabId: tab.id });
+  log("created Quiz tab", tab.id);
 }
 
 function openQuiz(quizName) {
+  log("openQuiz:", quizName);
   return openInQuizTab(QUIZ_URLS[quizName] || QUIZ_URLS["Adventuring"]);
 }
+
+// Open a cosmetic wait screen and remember its tab id + the quiz to resume after.
+async function openWait(page, quizName) {
+  await sset({ pendingQuiz: quizName });
+  const tab = await chrome.tabs.create({ url: chrome.runtime.getURL(page) });
+  await sset({ waitTabId: tab.id });
+  log("wait screen", page, "-> will resume", quizName);
+}
+
+// Advance to the pending quiz, exactly once.
+async function advance() {
+  const q = await sget("pendingQuiz");
+  if (q === undefined) return;
+  await chrome.storage.session.remove("pendingQuiz");
+  log("advancing to", q);
+  await openQuiz(q);
+}
+
+// When the wait tab closes (countdown done / skip / user-closed), advance.
+chrome.tabs.onRemoved.addListener(async (tabId) => {
+  if (tabId === await sget("waitTabId")) {
+    await chrome.storage.session.remove("waitTabId");
+    log("wait tab closed -> advancing");
+    advance().catch(console.error);
+  }
+});
 
 // ---- message router ----
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   switch (message.greeting) {
     case "startQuiz":
+      log("startQuiz");
       openQuiz(QUIZ_LIST[0]);
       break;
 
@@ -96,11 +131,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case "error429":
       handle429().catch(console.error);
       break;
-
-    case "advanceWait":
-      // a wait page finished its countdown (or the user hit "skip")
-      sget("pendingQuiz").then((q) => openQuiz(q || QUIZ_LIST[0]));
-      break;
   }
 });
 
@@ -109,17 +139,18 @@ async function handleNextQuiz(message) {
   const currentQuiz = await sget("currentQuiz");
   const quizIndex = QUIZ_LIST.indexOf(currentQuiz) + 1;
   const nextQuiz = QUIZ_LIST[quizIndex];
+  log("nextQuiz: current", currentQuiz, "| index", quizIndex, "-> next", nextQuiz);
 
   if (!satisfy || message.when || quizIndex % satisfyRate !== 0) {
     await openQuiz(nextQuiz);
   } else {
-    await sset({ pendingQuiz: nextQuiz });
-    await chrome.tabs.create({ url: chrome.runtime.getURL("waitScreen.html") });
+    log("satisfy pacing -> wait screen");
+    await openWait("waitScreen.html", nextQuiz);
   }
 }
 
 async function handle429() {
   const currentQuiz = await sget("currentQuiz");
-  await sset({ pendingQuiz: currentQuiz }); // retry the same quiz after the cooldown
-  await chrome.tabs.create({ url: chrome.runtime.getURL("429Wait.html") });
+  log("429 throttle -> cooldown, will retry", currentQuiz);
+  await openWait("429Wait.html", currentQuiz);
 }

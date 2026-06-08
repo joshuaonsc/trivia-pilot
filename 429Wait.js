@@ -42,7 +42,7 @@ function countDown() {
         document.getElementById('progressBar').value = timeToWait - time;
         if (time == 0) {
             clearInterval(interval);
-            chrome.runtime.sendMessage({ greeting: 'advanceWait' }, () => window.close());
+            window.close();
         }
     }, 1000);
 }
@@ -54,7 +54,7 @@ function stopCounter() {
     time = 0;
     document.getElementById('timeLeft').textContent = time + ' Seconds Remaining';
     document.getElementById('progressBar').value = timeToWait - time;
-    chrome.runtime.sendMessage({ greeting: "advanceWait" }, () => window.close());
+    window.close();
 }
 
 window.onload = function () {
