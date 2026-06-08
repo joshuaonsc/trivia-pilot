@@ -105,12 +105,12 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
                 openQuiz();
             }
             else {
-                window.open("https://www.crowns.krolpowered.com/too-many-requests-satisfaction/#anchor");
+                window.open(chrome.runtime.getURL("waitScreen.html"));
                 countDown(timeToWait);
             }
             break;
         case "error429":
-            window.open("https://www.crowns.krolpowered.com/too-many-requests/#anchor");
+            window.open(chrome.runtime.getURL("429Wait.html"));
             openThisQuiz = currentQuiz;
             countDown(timeToWait429);
             break;

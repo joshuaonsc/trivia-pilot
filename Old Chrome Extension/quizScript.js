@@ -6,6 +6,18 @@ var timeToWaitQuestion;
 var totalCrowns;
 var quizName;
 
+// Normalize text so stored answers match the live page despite
+// dash style, curly quotes, and whitespace differences (exact-match hardening).
+function normalizeText(text) {
+    return text
+        .replace(/[\u2010\u2011\u2012\u2013\u2014\u2015\u2212]/g, "-")
+        .replace(/[\u2018\u2019\u02BC]/g, "'")
+        .replace(/[\u201C\u201D]/g, '"')
+        .replace(/\u00A0/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
 function getData() {
     return new Promise(function (resolve, reject) {
         chrome.storage.sync.get(['playSound', 'soundFile', 'automaticSelection', 'color', 'timeToWaitQuestion', 'totalCrowns'], function (items) {
@@ -121,7 +133,7 @@ function answerQuestion() {
 
     //click on the correct answer, then hit the next quiz button
     for (i = 0; i < 4; i++) {
-        if (answer == choices[i]) {
+        if (answer != undefined && normalizeText(answer) == normalizeText(choices[i])) {
             if (!automaticSelection) {
                 document.getElementsByClassName('answerText')[i].style.backgroundColor = highlightColor;
             } else {
@@ -161,7 +173,7 @@ function adventuring(question) {
             answer = "Fire Dragon";
             break;
         case "An unmodified Sun Serpent does what?":
-            answer = "900 � 1000 Fire Damage + 300 Fire Damage to entire team";
+            answer = "900 - 1000 Fire Damage + 300 Fire Damage to entire team";
             break;
         case "Which of these is NOT a Zafaria Anchor Stone?":
             answer = "Rasik Anchor Stone";

@@ -50,27 +50,11 @@
       "js": [
         "error429.js"
       ]
-    },
-    {
-      "matches": [
-        "https://www.crowns.krolpowered.com/too-many-requests-satisfaction/"
-      ],
-      "js": [
-        "waitScreen.js"
-      ]
-    },
-    {
-      "matches": [
-        "https://www.crowns.krolpowered.com/too-many-requests/"
-      ],
-      "js": [
-        "429Wait.js"
-      ]
     }
   ],
   "web_accessible_resources": [
     "sounds/beep.wav",
-    "sounds/magical.wav",
+    "sounds/magic.wav",
     "sounds/sonar.wav",
     "sounds/squeaky.wav",
     "sounds/windows.wav"
