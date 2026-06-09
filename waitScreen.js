@@ -49,6 +49,12 @@ function countDown() {
 
 document.getElementById('nextQuizButton').addEventListener('click', stopCounter);
 
+// "Stop automation": pause, then close. The worker sees `paused` on the wait
+// tab's onRemoved and halts instead of advancing; the toolbar icon resumes.
+document.getElementById('stopButton').addEventListener('click', function () {
+    chrome.storage.session.set({ paused: true }, () => window.close());
+});
+
 function stopCounter() {
     clearInterval(interval);
     time = 0;

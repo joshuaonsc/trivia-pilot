@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>DCQAE — pacing between quizzes</title>
+    <title>TriviaPilot — pacing between quizzes</title>
     <style>
         body { font-family: Arial, Helvetica, sans-serif; background: #1f1f1f; color: #eee;
                text-align: center; margin: 0; padding: 56px 16px; }
@@ -12,9 +12,13 @@
         .crowns b { color: #ffd23f; }
         progress { width: 80%; max-width: 480px; height: 22px; margin: 28px 0 6px; }
         #timeLeft { font-size: 15px; color: #bbb; min-height: 20px; }
-        button { margin-top: 28px; background: #00b300; color: #fff; border: none;
-                 border-radius: 6px; padding: 10px 22px; font-size: 15px; cursor: pointer; }
-        button:hover { background: #00cc00; }
+        button { border: none; border-radius: 6px; padding: 10px 22px; font-size: 15px; cursor: pointer; }
+        #nextQuizButton { margin-top: 28px; background: #00b300; color: #fff; }
+        #nextQuizButton:hover { background: #00cc00; }
+        #stopButton { margin-top: 14px; background: #5a5a5a; color: #fff; }
+        #stopButton:hover { background: #777; }
+        .note { font-size: 13px; color: #888; max-width: 540px; margin: 24px auto 0; line-height: 1.5; }
+        .note b { color: #aaa; }
     </style>
 </head>
 <body>
@@ -23,7 +27,12 @@
     <p>Waiting briefly to stay under Wizard101's rate limit.</p>
     <progress id="progressBar" value="0" max="30"></progress>
     <p id="timeLeft">&nbsp;</p>
-    <button id="nextQuizButton">Skip the wait &amp; continue now</button>
+    <div><button id="nextQuizButton">Skip the wait &amp; continue now</button></div>
+    <div><button id="stopButton">Stop automation</button></div>
+    <p class="note">
+        Letting this count down — clicking <b>Skip</b>, or simply <b>closing this tab</b> — continues to the next quiz.
+        To halt the run instead, click <b>Stop automation</b>; resume later from the TriviaPilot toolbar icon.
+    </p>
     <script src="waitScreen.js"></script>
 </body>
 </html>
