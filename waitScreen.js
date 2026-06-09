@@ -32,7 +32,7 @@ function countDown() {
         currentQuiz = response.quizName;
     });
 
-    document.getElementById('DCQAEcrowns').innerText = totalCrowns;
+    document.getElementById('crownsEarned').innerText = totalCrowns;
     document.getElementById('progressBar').max = timeToWait;
 
     time = timeToWait;
