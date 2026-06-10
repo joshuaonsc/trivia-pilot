@@ -18,6 +18,15 @@ function normalizeText(text) {
         .trim();
 }
 
+// Looser fallback used only when the precise match above fails: keep just
+// letters, digits, and single spaces. Rescues answers the live page renders
+// with an odd glyph our stored text can't reproduce -- e.g. the Sun Serpent
+// damage-range separator, which KingsIsle shows as a non-dash symbol (it even
+// renders as a tofu box on their own page).
+function looseText(text) {
+    return text.toLowerCase().replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim();
+}
+
 function getData() {
     return new Promise(function (resolve, reject) {
         chrome.storage.sync.get(['playSound', 'soundFile', 'automaticSelection', 'color', 'timeToWaitQuestion', 'totalCrowns'], function (items) {
@@ -130,16 +139,27 @@ function answerQuestion() {
         choices.push(document.getElementsByClassName('answerText')[i].innerText);
     }
 
-    //click on the correct answer, then hit the next quiz button
-    for (i = 0; i < 4; i++) {
-        if (answer != undefined && normalizeText(answer) == normalizeText(choices[i])) {
-            if (!automaticSelection) {
-                document.getElementsByClassName('answerText')[i].style.backgroundColor = highlightColor;
-            } else {
-                document.getElementsByName('checkboxtag')[i].click();
-                document.getElementById('nextQuestion').click();
+    //find the correct answer: precise normalized match first, then a looser
+    //alphanumeric-only fallback for answers the page renders with an odd glyph.
+    var matchIndex = -1;
+    if (answer != undefined) {
+        for (i = 0; i < 4; i++) {
+            if (normalizeText(answer) == normalizeText(choices[i])) { matchIndex = i; break; }
+        }
+        if (matchIndex == -1) {
+            for (i = 0; i < 4; i++) {
+                if (looseText(answer) == looseText(choices[i])) { matchIndex = i; break; }
             }
-            break;
+        }
+    }
+
+    //click on the correct answer, then hit the next quiz button
+    if (matchIndex != -1) {
+        if (!automaticSelection) {
+            document.getElementsByClassName('answerText')[matchIndex].style.backgroundColor = highlightColor;
+        } else {
+            document.getElementsByName('checkboxtag')[matchIndex].click();
+            document.getElementById('nextQuestion').click();
         }
     }
 }
