@@ -7,13 +7,14 @@ var satisfy;
 var satisfyRate;
 var timeToWait;
 var timeToWait429;
+var debugLogging;
 
 var saveInfo;
 var totalCrowns;
 
 function restoreOptions() {
   console.log("Restoring options");
-  chrome.storage.sync.get(['playSound', 'soundFile', 'automaticSelection', 'color', 'timeToWaitQuestion', 'satisfy', 'satisfyRate', 'timeToWait', 'timeToWait429', 'totalCrowns'], function (items) {
+  chrome.storage.sync.get(['playSound', 'soundFile', 'automaticSelection', 'color', 'timeToWaitQuestion', 'satisfy', 'satisfyRate', 'timeToWait', 'timeToWait429', 'totalCrowns', 'debugLogging'], function (items) {
     document.getElementById('totalCrowns').innerText = items.totalCrowns;
 
     document.getElementById('sound').checked = items.playSound;
@@ -27,6 +28,8 @@ function restoreOptions() {
     document.getElementById('satisfyRate').value = items.satisfyRate;
     document.getElementById('timeToWait').value = items.timeToWait;
     document.getElementById('timeToWait429').value = items.timeToWait429;
+
+    document.getElementById('debugLogging').checked = items.debugLogging;
   });
   setTimeout(function () {
     document.getElementById('loadingIcon').style.display = "none";
@@ -51,6 +54,8 @@ function setDefaultOptions() {
   document.getElementById('satisfyRate').value = 3;
   document.getElementById('timeToWait').value = 30;
   document.getElementById('timeToWait429').value = 60;
+
+  document.getElementById('debugLogging').checked = false;
   updateStatus('Options reset to default.')
 }
 
@@ -82,6 +87,8 @@ function getValues() {
   satisfyRate = parseInt(document.getElementById('satisfyRate').value);
   timeToWait = parseInt(document.getElementById('timeToWait').value);
   timeToWait429 = parseInt(document.getElementById('timeToWait429').value);
+
+  debugLogging = document.getElementById('debugLogging').checked;
 }
 
 function errorCheck() {
@@ -121,7 +128,8 @@ function saveInformation() {
     satisfy: satisfy,
     satisfyRate: satisfyRate,
     timeToWait: timeToWait,
-    timeToWait429: timeToWait429
+    timeToWait429: timeToWait429,
+    debugLogging: debugLogging
   }, function () {
     updateStatus("Options Saved");
   });

@@ -9,7 +9,12 @@
 // fires and the worker advances unless paused. Pause also gates answering:
 // quizScript asks `isPaused` before touching a quiz page.
 
-const DEBUG = true;
+// Debug logging is a user option (options page -> Advanced), default off.
+let DEBUG = false;
+chrome.storage.sync.get("debugLogging", (items) => { DEBUG = !!items.debugLogging; });
+chrome.storage.onChanged.addListener((changes) => {
+  if (changes.debugLogging) DEBUG = !!changes.debugLogging.newValue;
+});
 const log = (...a) => { if (DEBUG) console.log("[TriviaPilot]", ...a); };
 
 const QUIZ_LIST = ["Adventuring", "Conjuring", "Magical", "Marleybone", "Mystical",
@@ -33,7 +38,7 @@ const LOGIN_URL = "https://www.wizard101.com/quiz/trivia/game/wizard101-trivia";
 const DEFAULTS = {
   playSound: true, soundFile: "windows.wav", automaticSelection: true,
   color: "#00b300", timeToWaitQuestion: 2, satisfy: true, satisfyRate: 3,
-  timeToWait: 30, timeToWait429: 60, totalCrowns: 0,
+  timeToWait: 30, timeToWait429: 60, totalCrowns: 0, debugLogging: false,
 };
 
 // Seed any missing default options. Runs on first install AND on reload/update,
