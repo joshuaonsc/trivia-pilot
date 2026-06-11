@@ -3,11 +3,11 @@
 // Event-driven and effectively stateless: only the reused "Quiz" tab id, the
 // wait-screen tab id, the current/pending quiz, and a `paused` flag live in
 // chrome.storage.session (which survives worker restarts but resets when the
-// browser closes). The wait screens are cosmetic countdown UIs -- when a wait
-// tab CLOSES (countdown done, the user hit "skip", or the user closed it),
-// chrome.tabs.onRemoved fires and the worker advances. The "Stop automation"
-// button sets `paused`, which makes the worker stop advancing; the toolbar icon
-// clears `paused` and resumes from the pending quiz.
+// browser closes). The toolbar popup (popup.html) drives start / pause / resume
+// via messages. Wait screens are cosmetic countdown UIs -- when a wait tab
+// closes (countdown done, skip, stop, or user-closed), chrome.tabs.onRemoved
+// fires and the worker advances unless paused. Pause also gates answering:
+// quizScript asks `isPaused` before touching a quiz page.
 
 const DEBUG = true;
 const log = (...a) => { if (DEBUG) console.log("[TriviaPilot]", ...a); };
@@ -36,8 +36,9 @@ const DEFAULTS = {
   timeToWait: 30, timeToWait429: 60, totalCrowns: 0,
 };
 
-// Seed any missing default options (install or reload). On update, re-enable
-// automaticSelection, matching MV2.
+// Seed any missing default options. Runs on first install AND on reload/update,
+// so a dev reload after an empty install still gets a full set of defaults.
+// On update we also re-enable automaticSelection, matching the MV2 behavior.
 chrome.runtime.onInstalled.addListener(async (details) => {
   const current = await chrome.storage.sync.get(Object.keys(DEFAULTS));
   const missing = {};
@@ -47,24 +48,6 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   if (Object.keys(missing).length) await chrome.storage.sync.set(missing);
   if (details.reason === "update") await chrome.storage.sync.set({ automaticSelection: true });
   log("onInstalled:", details.reason, "| seeded:", Object.keys(missing));
-});
-
-// Toolbar icon: clear any pause and start/resume. If we were paused mid-run,
-// resume from the pending quiz; otherwise open the trivia/login page.
-chrome.action.onClicked.addListener(async () => {
-  const wasPaused = await sget("paused");
-  await sset({ paused: false });
-  if (wasPaused) {
-    const pending = await sget("pendingQuiz");
-    if (pending !== undefined) {
-      await chrome.storage.session.remove("pendingQuiz");
-      log("icon clicked -> resume from", pending);
-      openQuiz(pending);
-      return;
-    }
-  }
-  log("icon clicked -> login page");
-  openInQuizTab(LOGIN_URL);
 });
 
 // ---- session-state helpers (survive worker restarts) ----
@@ -106,7 +89,7 @@ async function openWait(page, quizName) {
 }
 
 // Advance to the pending quiz, exactly once. No-op while paused (keeps the
-// pending quiz so the toolbar icon can resume from it).
+// pending quiz so the popup's Resume can continue from it).
 async function advance() {
   if (await sget("paused")) { log("paused; not advancing"); return; }
   const q = await sget("pendingQuiz");
@@ -125,17 +108,64 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
   }
 });
 
+// ---- popup actions ----
+async function startAutomation() {
+  await sset({ paused: false });
+  await chrome.storage.session.remove(["pendingQuiz", "currentQuiz"]);
+  log("start -> login page");
+  await openInQuizTab(LOGIN_URL);
+}
+
+async function resumeAutomation() {
+  await sset({ paused: false });
+  const pending = await sget("pendingQuiz");
+  if (pending !== undefined) {
+    await chrome.storage.session.remove("pendingQuiz");
+    log("resume ->", pending);
+    await openQuiz(pending);
+  } else {
+    log("resume; nothing pending -> login page");
+    await openInQuizTab(LOGIN_URL);
+  }
+}
+
 // ---- message router ----
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   switch (message.greeting) {
     case "startQuiz":
-      log("startQuiz");
-      openQuiz(QUIZ_LIST[0]);
+      // sent by login.js once the user is logged in; ignored while paused
+      sget("paused").then((paused) => {
+        if (paused) { log("paused; ignoring startQuiz"); return; }
+        log("startQuiz");
+        openQuiz(QUIZ_LIST[0]);
+      });
       break;
 
     case "setCurrentQuiz":
       sset({ currentQuiz: message.currentQuiz });
       break;
+
+    case "isPaused":
+      sget("paused").then((paused) => sendResponse({ paused: !!paused }));
+      return true; // keep the channel open for the async response
+
+    case "getStatus":
+      Promise.all([sget("paused"), sget("currentQuiz"), sget("pendingQuiz")])
+        .then(([paused, currentQuiz, pendingQuiz]) =>
+          sendResponse({ paused: !!paused, currentQuiz, pendingQuiz }));
+      return true;
+
+    case "startAutomation":
+      startAutomation().then(() => sendResponse({ ok: true })).catch(console.error);
+      return true;
+
+    case "pauseAutomation":
+      sset({ paused: true }).then(() => { log("paused via popup"); sendResponse({ ok: true }); });
+      return true;
+
+    case "resumeAutomation":
+      resumeAutomation().then(() => sendResponse({ ok: true })).catch(console.error);
+      return true;
 
     case "nextQuiz":
       handleNextQuiz(message).catch(console.error);

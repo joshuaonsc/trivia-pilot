@@ -13,7 +13,8 @@
     "service_worker": "background.js"
   },
   "action": {
-    "default_icon": "icons/icon_19.png"
+    "default_icon": "icons/icon_19.png",
+    "default_popup": "popup.html"
   },
   "permissions": [
     "activeTab",

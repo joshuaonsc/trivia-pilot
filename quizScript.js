@@ -42,6 +42,15 @@ function getData() {
 }
 
 getData().then(function () {
+    // Global pause gates answering too: while paused, leave quiz pages alone.
+    chrome.runtime.sendMessage({ greeting: "isPaused" }, function (response) {
+        void chrome.runtime.lastError; // worker hiccup -> fail open, run normally
+        if (response && response.paused) return;
+        runQuizPage();
+    });
+});
+
+function runQuizPage() {
     //get the name of the quiz
     if (document.body.children[0].innerText == "Too Many Requests") {
         chrome.runtime.sendMessage({ greeting: 'error429' });
@@ -80,7 +89,7 @@ getData().then(function () {
             setTimeout(answerQuestion, timeToWaitQuestion);
         }
     }
-})
+}
 
 function addCrowns() {
     totalCrowns += 10;
