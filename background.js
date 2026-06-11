@@ -137,10 +137,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sset({ currentQuiz: message.currentQuiz });
       break;
 
-    case "getCurrentQuiz":
-      sget("currentQuiz").then((quizName) => sendResponse({ quizName }));
-      return true; // keep the channel open for the async response
-
     case "nextQuiz":
       handleNextQuiz(message).catch(console.error);
       break;

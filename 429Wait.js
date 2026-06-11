@@ -1,37 +1,9 @@
 var timeToWait;
 var totalCrowns;
-var currentQuiz;
 var time;
 var interval;
 
-chrome.storage.onChanged.addListener(function (changes) {
-    for (var key in changes) {
-        var storageChange = changes[key];
-        switch (key) {
-            case "timeToWait429":
-                timeToWait = storageChange.newValue;
-                break;
-            case "totalCrowns":
-                totalCrowns = storageChange.newValue;
-        }
-    }
-});
-
-chrome.storage.sync.get(['timeToWait429', 'totalCrowns'], function (items) {
-    timeToWait = items.timeToWait429;
-    totalCrowns = items.totalCrowns;
-});
-
-chrome.runtime.onMessage.addListener(function (request) {
-    if (request.greeting == "refresh")
-        countDown();
-});
-
 function countDown() {
-    chrome.runtime.sendMessage({ greeting: "getCurrentQuiz" }, function (response) {
-        currentQuiz = response.quizName;
-    });
-
     document.getElementById('crownsEarned').innerText = totalCrowns;
     document.getElementById('progressBar').max = timeToWait;
 
@@ -49,8 +21,9 @@ function countDown() {
 
 document.getElementById('nextQuizButton').addEventListener('click', stopCounter);
 
-// "Stop automation": pause, then close. The worker sees `paused` on the wait
-// tab's onRemoved and halts instead of advancing; the toolbar icon resumes.
+// "Stop automation": pause, then close. The worker sees `paused` when this
+// tab's onRemoved fires and halts instead of advancing; resume from the
+// toolbar menu.
 document.getElementById('stopButton').addEventListener('click', function () {
     chrome.storage.session.set({ paused: true }, () => window.close());
 });

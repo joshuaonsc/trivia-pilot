@@ -44,14 +44,6 @@
       "js": [
         "login.js"
       ]
-    },
-    {
-      "matches": [
-        "https://www.freekigames.com/freegameslanding.freekigames.quizform.quizform"
-      ],
-      "js": [
-        "error429.js"
-      ]
     }
   ],
   "web_accessible_resources": [
