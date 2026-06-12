@@ -13,14 +13,15 @@
         .primary:hover { background: #00cc00; }
         .secondary { background: #5a5a5a; }
         .secondary:hover { background: #777; }
+        .danger { background: #cc3333; }
+        .danger:hover { background: #e04444; }
     </style>
 </head>
 <body>
     <h1>TriviaPilot</h1>
     <p id="status">&nbsp;</p>
     <button id="startButton" class="primary" hidden>Start quizzes</button>
-    <button id="resumeButton" class="primary" hidden>Resume</button>
-    <button id="pauseButton" class="secondary" hidden>Pause</button>
+    <button id="pauseResumeButton" class="danger" hidden>Pause</button>
     <button id="optionsButton" class="secondary">Options</button>
     <script src="popup.js"></script>
 </body>
