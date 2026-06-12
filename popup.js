@@ -25,24 +25,22 @@ function render() {
         var inProgress = !!(status.currentQuiz || status.pendingQuiz);
 
         // status line
-        var active = false;
         if (status.done) {
             text.textContent = "Done";
         } else if (paused) {
             text.textContent = status.pendingQuiz ? "Paused, next up: " + status.pendingQuiz : "Paused";
         } else if (inProgress) {
             text.textContent = "Running " + (status.currentQuiz || "…");
-            active = true;
         } else {
             text.textContent = "Idle";
         }
-        text.className = active ? "active" : "";
 
         // pause/resume: one toggle (red Pause running, green Resume paused),
-        // hidden when there's no run to act on.
+        // hidden when there's no run to act on. The gold sweep on Pause is the
+        // "automation is active" signal.
         set(toggle, paused
             ? { hidden: false, text: "Resume", cls: "primary" }
-            : { hidden: !inProgress, text: "Pause", cls: "danger" });
+            : { hidden: !inProgress, text: "Pause", cls: "danger sweep" });
 
         // start/restart: Start when nothing's going, Restart while paused
         // mid-run. Amber so it doesn't clash with Options (grey) or Resume (green).

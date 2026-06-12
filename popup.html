@@ -8,7 +8,8 @@
         h1 { font-size: 16px; color: #00b300; margin: 0 0 6px; }
         #status { font-size: 13px; color: #bbb; margin: 0 0 12px; min-height: 16px; }
         button { display: block; width: 100%; margin: 6px 0 0; padding: 9px 0; border: none;
-                 border-radius: 6px; font-size: 14px; cursor: pointer; color: #fff; }
+                 border-radius: 6px; font-size: 14px; cursor: pointer; color: #fff;
+                 position: relative; overflow: hidden; }
         .primary { background: #00b300; }
         .primary:hover { background: #00cc00; }
         .secondary { background: #5a5a5a; }
@@ -18,11 +19,11 @@
         .danger { background: #cc3333; }
         .danger:hover { background: #e04444; }
 
-        /* "magical" shimmer on the status line while a run is active */
-        .active { background: linear-gradient(90deg, #00b300 0%, #ffd23f 50%, #00b300 100%);
-                  background-size: 200% auto; -webkit-background-clip: text; background-clip: text;
-                  color: transparent; animation: shimmer 3s linear infinite; }
-        @keyframes shimmer { from { background-position: 0% center; } to { background-position: -200% center; } }
+        /* periodic gold shine sweeping across a button while the run is active */
+        .sweep::after { content: ""; position: absolute; top: 0; left: 0; width: 50%; height: 100%;
+                        background: linear-gradient(120deg, transparent, rgba(255, 220, 120, 0.45), transparent);
+                        transform: translateX(-120%); animation: sweep 2.4s linear infinite; }
+        @keyframes sweep { to { transform: translateX(320%); } }
     </style>
 </head>
 <body>
