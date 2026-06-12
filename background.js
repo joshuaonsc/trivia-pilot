@@ -116,20 +116,29 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
 // ---- popup actions ----
 async function startAutomation() {
   await sset({ paused: false });
-  await chrome.storage.session.remove(["pendingQuiz", "currentQuiz"]);
+  await chrome.storage.session.remove(["pendingQuiz", "currentQuiz", "done"]);
   log("start -> login page");
   await openInQuizTab(LOGIN_URL);
 }
 
 async function resumeAutomation() {
   await sset({ paused: false });
+  await chrome.storage.session.remove("done");
   const pending = await sget("pendingQuiz");
+  const current = await sget("currentQuiz");
+  // Resume straight to where we left off -- the pending quiz (paused at a wait
+  // screen) or the current quiz (paused mid-quiz). Never re-run from the login
+  // page, which would rapid-cycle through already-completed quizzes and look
+  // unnatural to Wizard101's servers.
   if (pending !== undefined) {
     await chrome.storage.session.remove("pendingQuiz");
-    log("resume ->", pending);
+    log("resume -> pending", pending);
     await openQuiz(pending);
+  } else if (current !== undefined) {
+    log("resume -> reopen current", current);
+    await openQuiz(current);
   } else {
-    log("resume; nothing pending -> login page");
+    log("resume -> nothing tracked, login page");
     await openInQuizTab(LOGIN_URL);
   }
 }
@@ -148,6 +157,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     case "setCurrentQuiz":
       sset({ currentQuiz: message.currentQuiz });
+      chrome.storage.session.remove("done"); // a quiz page loaded -> not done
       break;
 
     case "isPaused":
@@ -155,9 +165,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return true; // keep the channel open for the async response
 
     case "getStatus":
-      Promise.all([sget("paused"), sget("currentQuiz"), sget("pendingQuiz")])
-        .then(([paused, currentQuiz, pendingQuiz]) =>
-          sendResponse({ paused: !!paused, currentQuiz, pendingQuiz }));
+      Promise.all([sget("paused"), sget("currentQuiz"), sget("pendingQuiz"), sget("done")])
+        .then(([paused, currentQuiz, pendingQuiz, done]) =>
+          sendResponse({ paused: !!paused, currentQuiz, pendingQuiz, done: !!done }));
       return true;
 
     case "startAutomation":
@@ -178,6 +188,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     case "error429":
       handle429().catch(console.error);
+      break;
+
+    case "runComplete":
+      // last quiz (Zafaria) finished -> mark the run done for the popup
+      sset({ done: true });
+      chrome.storage.session.remove(["currentQuiz", "pendingQuiz"]);
+      log("run complete");
       break;
   }
 });

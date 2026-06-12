@@ -1,4 +1,4 @@
-// TriviaPilot toolbar menu: start, pause/resume (one toggle), jump to options.
+// TriviaPilot toolbar menu: start / restart, pause-resume toggle, options.
 
 var paused = false; // mirrors the worker's paused flag; kept current by render()
 
@@ -9,6 +9,12 @@ function send(greeting, callback) {
     });
 }
 
+function set(el, opts) {
+    el.hidden = !!opts.hidden;
+    if (opts.text !== undefined) el.textContent = opts.text;
+    if (opts.cls !== undefined) el.className = opts.cls;
+}
+
 function render() {
     send("getStatus", function (status) {
         status = status || {};
@@ -16,30 +22,34 @@ function render() {
         var text = document.getElementById("status");
         var start = document.getElementById("startButton");
         var toggle = document.getElementById("pauseResumeButton");
-        var idle = !status.currentQuiz && !status.pendingQuiz;
+        var inProgress = !!(status.currentQuiz || status.pendingQuiz);
 
-        if (paused) {
-            text.textContent = status.pendingQuiz
-                ? "Paused — next up: " + status.pendingQuiz
-                : "Paused";
-            start.textContent = "Start over";
-            start.className = "secondary"; // Resume is the primary action here
-        } else if (!idle) {
-            text.textContent = "Running — current quiz: " + (status.currentQuiz || "…");
+        // status line
+        var active = false;
+        if (status.done) {
+            text.textContent = "Done";
+        } else if (paused) {
+            text.textContent = status.pendingQuiz ? "Paused, next up: " + status.pendingQuiz : "Paused";
+        } else if (inProgress) {
+            text.textContent = "Running " + (status.currentQuiz || "…");
+            active = true;
         } else {
-            text.textContent = "Idle — ready when you are.";
-            start.textContent = "Start quizzes";
-            start.className = "primary";
+            text.textContent = "Idle";
         }
+        text.className = active ? "active" : "";
 
-        start.hidden = !(paused || idle);
+        // pause/resume: one toggle (red Pause running, green Resume paused),
+        // hidden when there's no run to act on.
+        set(toggle, paused
+            ? { hidden: false, text: "Resume", cls: "primary" }
+            : { hidden: !inProgress, text: "Pause", cls: "danger" });
 
-        // One toggle: red Pause while running, green Resume while paused.
-        // Hidden when idle -- nothing to pause, and pausing while paused is
-        // impossible by construction.
-        toggle.hidden = idle && !paused;
-        toggle.textContent = paused ? "Resume" : "Pause";
-        toggle.className = paused ? "primary" : "danger";
+        // start/restart: Start when nothing's going, Restart while paused
+        // mid-run. Amber so it doesn't clash with Options (grey) or Resume (green).
+        var showStart = paused || !inProgress;
+        set(start, paused && inProgress
+            ? { hidden: false, text: "Restart", cls: "warn" }
+            : { hidden: !showStart, text: "Start", cls: "primary" });
     });
 }
 

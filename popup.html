@@ -13,15 +13,23 @@
         .primary:hover { background: #00cc00; }
         .secondary { background: #5a5a5a; }
         .secondary:hover { background: #777; }
+        .warn { background: #c8860a; }
+        .warn:hover { background: #e09a14; }
         .danger { background: #cc3333; }
         .danger:hover { background: #e04444; }
+
+        /* "magical" shimmer on the status line while a run is active */
+        .active { background: linear-gradient(90deg, #00b300 0%, #ffd23f 50%, #00b300 100%);
+                  background-size: 200% auto; -webkit-background-clip: text; background-clip: text;
+                  color: transparent; animation: shimmer 3s linear infinite; }
+        @keyframes shimmer { from { background-position: 0% center; } to { background-position: -200% center; } }
     </style>
 </head>
 <body>
     <h1>TriviaPilot</h1>
     <p id="status">&nbsp;</p>
-    <button id="startButton" class="primary" hidden>Start quizzes</button>
-    <button id="pauseResumeButton" class="danger" hidden>Pause</button>
+    <button id="pauseResumeButton" hidden></button>
+    <button id="startButton" hidden></button>
     <button id="optionsButton" class="secondary">Options</button>
     <script src="popup.js"></script>
 </body>

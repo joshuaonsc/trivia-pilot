@@ -81,8 +81,10 @@ function runQuizPage() {
                 else if (quizName != "Zafaria") {
                     addCrowns();
                     chrome.runtime.sendMessage({ greeting: 'nextQuiz' });
-                } else
+                } else {
                     addCrowns();
+                    chrome.runtime.sendMessage({ greeting: 'runComplete' });
+                }
             }
         }
         else {
